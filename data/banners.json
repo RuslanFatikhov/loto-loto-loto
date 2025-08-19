@@ -1,0 +1,18 @@
+{
+  "banners": [
+    {
+      "id": 1,
+      "title": "Джекпот 1 миллион!",
+      "subtitle": "Участвуйте в Большом Лото",
+      "image": "banner1.jpg",
+      "active": true
+    },
+    {
+      "id": 2,
+      "title": "Быстрые выигрыши",
+      "subtitle": "Экспресс Лото каждый день",
+      "image": "banner2.jpg",
+      "active": true
+    }
+  ]
+}

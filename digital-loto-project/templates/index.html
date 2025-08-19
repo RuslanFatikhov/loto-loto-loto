@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/reset.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <title>Цифровое Лото - Главная страница</title>
+    <script>
+        {% if draws %}
+        window.drawsData = {{ draws | tojson }};
+        {% endif %}
+        {% if banners %}
+        window.bannersData = {{ banners | tojson }};
+        {% endif %}
+    </script>
+    <style>
+        /* Общие стили */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* Header */
+        header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+            background: linear-gradient(45deg, #ff6b6b, #feca57);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-links {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: #333;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        .nav-links a:hover {
+            color: #ff6b6b;
+        }
+
+        /* Модальные окна */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            padding: 2rem;
+            max-width: 500px;
+            width: 90%;
+            position: relative;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 2rem;
+            cursor: pointer;
+            color: #666;
+        }
+
+        /* Модальное окно розыгрыша - шторка */
+        .draw-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 15000;
+            align-items: flex-end;
+            justify-content: center;
+        }
+
+        .draw-modal.show {
+            display: flex;
+        }
+
+        .draw-modal-content {
+            background: white;
+            border-radius: 20px 20px 0 0;
+            width: 100%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            transform: translateY(100%);
+            transition: transform 0.3s ease-out;
+        }
+
+        .draw-modal.show .draw-modal-content {
+            transform: translateY(0);
+        }
+
+        .draw-modal-header {
+            position: relative;
+            height: 200px;
+            border-radius: 20px 20px 0 0;
+            overflow: hidden;
+            background: linear-gradient(45deg, #ff6b6b, #feca57);
+        }
+
+        .draw-modal-bg {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        .draw-modal-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, rgba(255, 107, 107, 0.8), rgba(254, 202, 87, 0.8));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            text-align: center;
+            color: white;
+            padding: 1rem;
+        }
+
+        .draw-modal-close {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 2rem;
+            cursor: pointer;
+            color: white;
+            z-index: 10;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .draw-modal-prize-img {
+            width: 80px;
+            height: 80px;
+            object-fit: contain;
+            margin-bottom: 10px;
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+        }
+
+        .draw-modal-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .draw-modal-subtitle {
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+
+        .draw-modal-body {
+            padding: 1.5rem;
+        }
+
+        .draw-info-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .draw-info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .draw-info-row:last-child {
+            border-bottom: none;
+        }
+
+        .draw-info-label {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .draw-info-value {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .prizes-section {
+            margin: 1.5rem 0;
+        }
+
+        .prizes-title {
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            color: #333;
+        }
+
+        .prize-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem;
+            background: #f8f9fa;
+            border-radius: 10px;
+            margin-bottom: 0.5rem;
+        }
+
+        .prize-name {
+            font-weight: 500;
+            color: #333;
+        }
+
+        .prize-chance {
+            background: linear-gradient(45deg, #ff6b6b, #feca57);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .draw-modal-footer {
+            padding: 1rem 1.5rem 2rem;
+            border-top: 1px solid #f0f0f0;
+        }
+
+        .buy-ticket-btn {
+            width: 100%;
+            background: linear-gradient(45deg, #ff6b6b, #feca57);
+            color: white;
+            border: none;
+            border-radius: 15px;
+            padding: 1rem;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            transition: transform 0.2s ease;
+        }
+
+        .buy-ticket-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .buy-ticket-btn:active {
+            transform: translateY(0);
+        }
+
+        .ticket-cost {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .coin-icon {
+            width: 20px;
+            height: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .draw-modal-content {
+                max-width: 100%;
+                border-radius: 15px 15px 0 0;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Main content -->
+    <main class="container">
+
+        <!-- Карусель баннеров -->
+        <div class="carousel-container">
+            <div class="carousel-wrapper">
+                <div class="carousel-slides" id="carousel-slides">
+                    <!-- Слайды будут загружены из banners.json -->
+                </div>
+            </div>
+            <div class="carousel-indicators" id="carousel-indicators">
+                <!-- Индикаторы будут сгенерированы автоматически -->
+            </div>
+        </div>
+
+        <!-- Сервисные кнопки -->
+        <div class="service-buttons">
+
+            <a href="/tickets" class="service-btn">
+                <img src="{{ url_for('static', filename='img/icons/ticket.jpg') }}" alt="chevron" >
+                <span>Мои билеты</span>
+            </a>
+
+            <a href="/packages" class="service-btn">
+                <img src="{{ url_for('static', filename='img/icons/action.jpg') }}" alt="chevron" >
+                <span>Акции</span>
+            </a>
+
+            <a href="#draws" class="service-btn">
+                <img src="{{ url_for('static', filename='img/icons/draw.jpg') }}" alt="chevron" >
+                <span>Розыгрыши</span>
+            </a>
+        </div>
+
+        <!-- Крупные розыгрыши -->
+        <section class="draws-section">
+            <div class="draws-grid" id="big-draws-grid">
+                <!-- Карточки крупных розыгрышей будут загружены из JSON -->
+            </div>
+        </section>
+
+        <!-- Экспресс розыгрыши -->
+        <section class="draws-section">
+            <h2 class="section-title">Экспресс-розыгрыши</h2>
+            <div class="draws-grid2" id="express-draws-grid">
+                <!-- Карточки экспресс розыгрышей будут загружены из JSON -->
+            </div>
+        </section>
+
+        <!--Истории победителей-->
+        <section class="draws-section">
+            <h2 class="section-title">Пакет билетов</h2>
+            <div class="h_scrollview">
+                <img src="{{ url_for('static', filename='img/packages.jpeg') }}" alt="Пакет 1" class="winner-card">
+                <img src="{{ url_for('static', filename='img/packagem.jpeg') }}" alt="Пакет 2" class="winner-card">
+                <img src="{{ url_for('static', filename='img/packagel.jpeg') }}" alt="Пакет 3" class="winner-card">
+                <img src="{{ url_for('static', filename='img/packagexl.jpeg') }}" alt="Пакет 4" class="winner-card">
+            </div>
+        </section>
+
+        <!--Истории победителей-->
+        <section class="draws-section">
+            <h2 class="section-title">Истории победителей</h2>
+            <div class="h_scrollview">
+                <img src="{{ url_for('static', filename='img/winner1.jpeg') }}" alt="Победитель 1" class="winner-card">
+                <img src="{{ url_for('static', filename='img/winner2.jpeg') }}" alt="Победитель 2" class="winner-card">
+                <img src="{{ url_for('static', filename='img/winner3.jpeg') }}" alt="Победитель 3" class="winner-card">
+                <img src="{{ url_for('static', filename='img/winner4.jpeg') }}" alt="Победитель 4" class="winner-card">
+            </div>
+        </section>
+    </main>
+
+    <!-- Модальное окно -->
+    <div class="modal" id="banner-modal">
+        <div class="modal-content">
+            <span class="modal-close">&times;</span>
+            <div id="modal-content-body">
+                <!-- Контент модального окна -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Новое модальное окно розыгрыша -->
+    <div class="draw-modal" id="draw-modal">
+        <div class="draw-modal-content">
+            <div class="draw-modal-header">
+                <img class="draw-modal-bg" id="draw-modal-bg" src="" alt="Background">
+                <div class="draw-modal-overlay">
+                    <span class="draw-modal-close" onclick="closeDrawModal()">&times;</span>
+                    <img class="draw-modal-prize-img" id="draw-modal-prize-img" src="" alt="Prize">
+                    <h2 class="draw-modal-title" id="draw-modal-title">Название розыгрыша</h2>
+                    <p class="draw-modal-subtitle">Супер-приз</p>
+                </div>
+            </div>
+            <div class="draw-modal-body">
+                <div class="draw-info-section">
+                    <div class="draw-info-row">
+                        <span class="draw-info-label">До розыгрыша:</span>
+                        <span class="draw-info-value" id="draw-modal-time">2 дня 12 часов</span>
+                    </div>
+                    <div class="draw-info-row">
+                        <span class="draw-info-label">Стоимость билета:</span>
+                        <span class="draw-info-value">
+                            <span id="draw-modal-cost">100</span>
+                            <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHZpZXdCb3g9IjAgMCAyMCAyMCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMTAiIGN5PSIxMCIgcj0iMTAiIGZpbGw9IiNGRkQ3MDAiLz4KPHA+PHRleHQgeD0iMTAiIHk9IjE0IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTIiIGZvbnQtd2VpZ2h0PSJib2xkIiBmaWxsPSIjMzMzIj7igJk8L3RleHQ+PC9wPgo8L3N2Zz4=" alt="Coin" class="coin-icon">
+                        </span>
+                    </div>
+                </div>
+                <div class="prizes-section">
+                    <h3 class="prizes-title">Призы в розыгрыше</h3>
+                    <div id="draw-modal-prizes">
+                        <!-- Призы будут добавлены динамически -->
+                    </div>
+                </div>
+            </div>
+            <div class="draw-modal-footer">
+                <a href="#" class="buy-ticket-btn" id="buy-ticket-link">
+                    <span>Купить билет за</span>
+                    <div class="ticket-cost">
+                        <span id="footer-ticket-cost">100</span>
+                        <img src="..." alt="Coin" class="coin-icon">
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        
+
+        // Функция загрузки баннеров
+        function loadBanners(banners) {
+            const slidesContainer = document.getElementById('carousel-slides');
+            const indicatorsContainer = document.getElementById('carousel-indicators');
+            
+            slidesContainer.innerHTML = '';
+            indicatorsContainer.innerHTML = '';
+            
+            banners.forEach((banner, index) => {
+                // Создание слайда
+                const slide = document.createElement('div');
+                slide.className = 'carousel-slide';
+                slide.style.backgroundImage = `url('static/img/banners/${banner.img}')`;
+                slide.onclick = () => openBannerUrl(banner.url);
+                
+                slidesContainer.appendChild(slide);
+                
+                // Создание индикатора
+                const indicator = document.createElement('div');
+                indicator.className = `indicator ${index === 0 ? 'active' : ''}`;
+                indicator.onclick = () => carousel.goToSlide(index);
+                
+                indicatorsContainer.appendChild(indicator);
+            });
+        }
+
+        // Функция загрузки розыгрышей
+        function loadDraws(drawsData) {
+            // Разделяем розыгрыши по категориям
+            const bigDraws = drawsData.filter(draw => draw.category === 'big');
+            const expressDraws = drawsData.filter(draw => draw.category === 'express');
+            
+            // Загрузка крупных розыгрышей
+            const bigDrawsContainer = document.getElementById('big-draws-grid');
+            bigDrawsContainer.innerHTML = '';
+            
+            bigDraws.forEach(draw => {
+                const card = createDrawCard(draw);
+                bigDrawsContainer.appendChild(card);
+            });
+            
+            // Загрузка экспресс розыгрышей
+            const expressDrawsContainer = document.getElementById('express-draws-grid');
+            expressDrawsContainer.innerHTML = '';
+            
+            expressDraws.forEach(draw => {
+                const card = createDrawCard(draw);
+                expressDrawsContainer.appendChild(card);
+            });
+        }
+
+        // Функция создания карточки розыгрыша
+        function createDrawCard(draw) {
+            const card = document.createElement('div');
+            
+            // Определяем класс в зависимости от категории
+            if (draw.category === 'express') {
+                card.className = 'draw-card2';
+            } else {
+                card.className = 'draw-card';
+            }
+            
+            card.setAttribute('data-id', draw.id);
+            
+            // Определяем что показывать в карточке
+            let drawImageContent;
+            if (draw.image) {
+                drawImageContent = `<img src="static/img/draws/${draw.image}" alt="${draw.title}">`;
+            } else {
+                drawImageContent = generateIconSvg(draw.id);
+            }
+            
+            // Определяем фон
+            let backgroundStyle;
+            if (draw.bg) {
+                backgroundStyle = `background-image: url('static/img/draws/${draw.bg}'); background-size: cover; background-position: center;`;
+            } else {
+                backgroundStyle = `background: linear-gradient(45deg, #ff6b6b, #feca57);`;
+            }
+            
+            card.innerHTML = `
+                <img class="draw-bg" src="static/img/draws/${draw.bg}" alt="bg">
+
+                <div class="draw-cost">
+                    <p>${draw.cost}</p>
+                    <img src="../static/img/icons/coin.png" alt="Монеты">
+                </div>
+
+                <div class="draw-info">
+                    <span class="draw-top">
+                        <img class="draw-logo" src="static/img/draws/${draw.image}" alt="logo">
+                        <span class="vstack">
+                            <p class="white1">Супер-приз</p>
+                            <h3 class="white1">${draw.title}</h3>
+                        </span>
+                        
+                    </span>
+
+                <span class="draw-bottom">
+                        <span class="draw-time">
+                            <p class="white1">До розыгрыша:<br> <h3 class="white1">${draw.time_left}</h3></p>
+                    </span>
+
+                    <button class="btn-yellow" onclick="goToDraw(${draw.id})">
+                                ${draw.button_text}
+                    </button>
+                </span>
+            `;
+            
+            return card;
+        }
+
+        // Функция открытия ссылки баннера
+        function openBannerUrl(url) {
+            if (url.startsWith('/')) {
+                window.location.href = url;
+            } else {
+                window.open(url, '_blank');
+            }
+        }
+
+        // Глобальная переменная для карусели
+        let carousel;
+
+        // Класс карусели
+        class Carousel {
+            constructor(container) {
+                this.container = container;
+                this.slides = container.querySelector('.carousel-slides');
+                this.slideElements = container.querySelectorAll('.carousel-slide');
+                this.indicators = container.querySelectorAll('.indicator');
+                this.prevBtn = container.querySelector('.carousel-prev');
+                this.nextBtn = container.querySelector('.carousel-next');
+                this.currentIndex = 0;
+                this.autoplayInterval = null;
+                this.isPlaying = true;
+                
+                // Переменные для свайпов
+                this.startX = 0;
+                this.startY = 0;
+                this.distX = 0;
+                this.distY = 0;
+                this.threshold = 100; // минимальное расстояние для свайпа
+                this.restraint = 100; // максимальное отклонение по Y
+                this.allowedTime = 300; // максимальное время для свайпа
+                this.startTime = 0;
+                
+                this.init();
+            }
+            
+            init() {
+                // Настройка событий для кнопок
+                if (this.prevBtn) this.prevBtn.addEventListener('click', () => this.prevSlide());
+                if (this.nextBtn) this.nextBtn.addEventListener('click', () => this.nextSlide());
+                
+                this.indicators.forEach((indicator, index) => {
+                    indicator.addEventListener('click', () => this.goToSlide(index));
+                });
+                
+                // Пауза при наведении
+                this.container.addEventListener('mouseenter', () => this.stopAutoplay());
+                this.container.addEventListener('mouseleave', () => this.startAutoplay());
+                
+                // События для свайпов (touch)
+                this.slides.addEventListener('touchstart', (e) => this.handleTouchStart(e), {passive: true});
+                this.slides.addEventListener('touchmove', (e) => this.handleTouchMove(e), {passive: true});
+                this.slides.addEventListener('touchend', (e) => this.handleTouchEnd(e), {passive: true});
+                
+                // События для свайпов (mouse - для десктопа)
+                this.slides.addEventListener('mousedown', (e) => this.handleMouseStart(e));
+                this.slides.addEventListener('mousemove', (e) => this.handleMouseMove(e));
+                this.slides.addEventListener('mouseup', (e) => this.handleMouseEnd(e));
+                this.slides.addEventListener('mouseleave', (e) => this.handleMouseEnd(e));
+                
+                // Предотвращаем выделение текста при перетаскивании
+                this.slides.addEventListener('dragstart', (e) => e.preventDefault());
+                
+                // Запуск автопрокрутки
+                this.startAutoplay();
+            }
+            
+            // Обработка touch событий
+            handleTouchStart(e) {
+                this.startX = e.touches[0].clientX;
+                this.startY = e.touches[0].clientY;
+                this.startTime = new Date().getTime();
+                this.stopAutoplay();
+            }
+            
+            handleTouchMove(e) {
+                if (!this.startX || !this.startY) return;
+                
+                this.distX = e.touches[0].clientX - this.startX;
+                this.distY = e.touches[0].clientY - this.startY;
+            }
+            
+            handleTouchEnd(e) {
+                const elapsedTime = new Date().getTime() - this.startTime;
+                
+                if (elapsedTime <= this.allowedTime) {
+                    if (Math.abs(this.distX) >= this.threshold && Math.abs(this.distY) <= this.restraint) {
+                        if (this.distX > 0) {
+                            this.prevSlide(); // свайп вправо - предыдущий слайд
+                        } else {
+                            this.nextSlide(); // свайп влево - следующий слайд
+                        }
+                    }
+                }
+                
+                // Сброс значений
+                this.startX = 0;
+                this.startY = 0;
+                this.distX = 0;
+                this.distY = 0;
+                this.startTime = 0;
+                
+                this.startAutoplay();
+            }
+            
+            // Обработка mouse событий (для десктопа)
+            handleMouseStart(e) {
+                this.startX = e.clientX;
+                this.startY = e.clientY;
+                this.startTime = new Date().getTime();
+                this.stopAutoplay();
+                this.slides.style.cursor = 'grabbing';
+            }
+            
+            handleMouseMove(e) {
+                if (!this.startX || !this.startY) return;
+                
+                this.distX = e.clientX - this.startX;
+                this.distY = e.clientY - this.startY;
+            }
+            
+            handleMouseEnd(e) {
+                if (!this.startX) return;
+                
+                const elapsedTime = new Date().getTime() - this.startTime;
+                
+                if (elapsedTime <= this.allowedTime) {
+                    if (Math.abs(this.distX) >= this.threshold && Math.abs(this.distY) <= this.restraint) {
+                        if (this.distX > 0) {
+                            this.prevSlide();
+                        } else {
+                            this.nextSlide();
+                        }
+                    }
+                }
+                
+                // Сброс значений
+                this.startX = 0;
+                this.startY = 0;
+                this.distX = 0;
+                this.distY = 0;
+                this.startTime = 0;
+                
+                this.slides.style.cursor = 'grab';
+                this.startAutoplay();
+            }
+            
+            nextSlide() {
+                this.currentIndex = (this.currentIndex + 1) % this.slideElements.length;
+                this.updateSlides();
+            }
+            
+            prevSlide() {
+                this.currentIndex = this.currentIndex === 0 ? 
+                    this.slideElements.length - 1 : this.currentIndex - 1;
+                this.updateSlides();
+            }
+            
+            goToSlide(index) {
+                this.currentIndex = index;
+                this.updateSlides();
+            }
+            
+            updateSlides() {
+                const offset = -this.currentIndex * 100;
+                this.slides.style.transform = `translateX(${offset}%)`;
+                
+                // Обновление индикаторов
+                this.indicators.forEach((indicator, index) => {
+                    indicator.classList.toggle('active', index === this.currentIndex);
+                });
+            }
+            
+            startAutoplay() {
+                if (!this.isPlaying) return;
+                this.autoplayInterval = setInterval(() => {
+                    this.nextSlide();
+                }, 5000);
+            }
+            
+            stopAutoplay() {
+                clearInterval(this.autoplayInterval);
+            }
+        }
+
+        // Функция для загрузки данных из JSON файлов
+        async function loadDataFromFiles() {
+            try {
+                // Загружаем баннеры
+                const bannersResponse = await fetch('/static/data/banners.json');
+                const banners = await bannersResponse.json();
+                
+                // Загружаем розыгрыши
+                const drawsResponse = await fetch('/static/data/draws.json');
+                const draws = await drawsResponse.json();
+                
+                // Обновляем интерфейс
+                loadBanners(banners);
+                loadDraws(draws);
+                
+                // Инициализируем карусель после загрузки баннеров
+                setTimeout(() => {
+                    carousel = new Carousel(document.querySelector('.carousel-container'));
+                }, 100);
+                
+            } catch (error) {
+                console.error('Ошибка загрузки данных:', error);
+            }
+        }
+
+        // Инициализация страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            // Загружаем данные из JSON файлов
+            loadDataFromFiles();
+        });
+
+        // Функции для переходов и модальных окон
+        function goToDraw(drawId) {
+            // Новая функциональность - открытие модалки
+            openDrawModal(drawId);
+        }
+
+        // Функция открытия модального окна розыгрыша
+        function openDrawModal(drawId) {
+            // Получаем данные из JSON файла
+            fetch('/static/data/draws.json')
+                .then(response => response.json())
+                .then(drawsData => {
+                    const draw = drawsData.find(d => d.id === drawId);
+                    if (!draw) return;
+
+                    // Заполняем данные в модальном окне
+                    document.getElementById('draw-modal-bg').src = `static/img/draws/${draw.bg}`;
+                    document.getElementById('draw-modal-prize-img').src = `static/img/draws/${draw.image}`;
+                    document.getElementById('draw-modal-title').textContent = draw.title;
+                    document.getElementById('draw-modal-time').textContent = draw.time_left;
+                    document.getElementById('draw-modal-cost').textContent = draw.cost;
+                    document.getElementById('footer-ticket-cost').textContent = draw.cost;
+                    document.getElementById('buy-ticket-link').href = `/buy_ticket/${draw.id}`;
+
+                    // Заполняем призы
+                    const prizesContainer = document.getElementById('draw-modal-prizes');
+                    prizesContainer.innerHTML = '';
+                    
+                    draw.prizes.forEach(prize => {
+                        const prizeElement = document.createElement('div');
+                        prizeElement.className = 'prize-item';
+                        prizeElement.innerHTML = `
+                            <span class="prize-name">${prize.name}</span>
+                            <span class="prize-chance">${prize.chance_per}%</span>
+                        `;
+                        prizesContainer.appendChild(prizeElement);
+                    });
+
+                    // Показываем модальное окно
+                    const modal = document.getElementById('draw-modal');
+                    modal.classList.add('show');
+                    
+                    // Блокируем прокрутку страницы
+                    document.body.style.overflow = 'hidden';
+                })
+                .catch(error => {
+                    console.error('Ошибка загрузки данных розыгрыша:', error);
+                });
+        }
+
+        // Функция закрытия модального окна розыгрыша
+        function closeDrawModal() {
+            const modal = document.getElementById('draw-modal');
+            modal.classList.remove('show');
+            
+            // Возвращаем прокрутку страницы
+            document.body.style.overflow = '';
+        }
+
+        // Функция покупки билета
+        function buyTicket() {
+            alert('Покупка билета! Здесь будет логика оплаты.');
+            closeDrawModal();
+        }
+
+        function showBannerModal(bannerId) {
+            // Эта функция больше не используется, так как баннеры теперь открывают внешние ссылки
+            console.log('Показ модалки для баннера:', bannerId);
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('banner-modal');
+            modal.style.display = 'none';
+        }
+
+        // Закрытие модального окна по клику на крестик
+        document.addEventListener('DOMContentLoaded', function() {
+            const modalClose = document.querySelector('.modal-close');
+            const modal = document.getElementById('banner-modal');
+            const drawModal = document.getElementById('draw-modal');
+            
+            if (modalClose) {
+                modalClose.addEventListener('click', closeModal);
+            }
+            
+            // Закрытие существующего модального окна
+            if (modal) {
+                modal.addEventListener('click', function(e) {
+                    if (e.target === modal) {
+                        closeModal();
+                    }
+                });
+            }
+            
+            // Закрытие модального окна розыгрыша
+            drawModal.addEventListener('click', function(e) {
+                if (e.target === drawModal) {
+                    closeDrawModal();
+                }
+            });
+            
+            // Закрытие по клавише Escape
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    if (modal && modal.style.display === 'flex') {
+                        closeModal();
+                    }
+                    if (drawModal && drawModal.classList.contains('show')) {
+                        closeDrawModal();
+                    }
+                }
+            });
+
+            // Поддержка свайпа вниз для закрытия модалки розыгрыша
+            let startY = 0;
+            let currentY = 0;
+            let isDragging = false;
+            const modalContent = drawModal.querySelector('.draw-modal-content');
+
+            modalContent.addEventListener('touchstart', function(e) {
+                startY = e.touches[0].clientY;
+                isDragging = true;
+            }, { passive: true });
+
+            modalContent.addEventListener('touchmove', function(e) {
+                if (!isDragging) return;
+                
+                currentY = e.touches[0].clientY;
+                const deltaY = currentY - startY;
+                
+                // Если свайп вниз и в самом верху модалки
+                if (deltaY > 0 && modalContent.scrollTop === 0) {
+                    e.preventDefault();
+                    const translateY = Math.min(deltaY, 200);
+                    modalContent.style.transform = `translateY(${translateY}px)`;
+                    modalContent.style.transition = 'none';
+                }
+            }, { passive: false });
+
+            modalContent.addEventListener('touchend', function(e) {
+                if (!isDragging) return;
+                
+                const deltaY = currentY - startY;
+                isDragging = false;
+                
+                modalContent.style.transition = 'transform 0.3s ease-out';
+                
+                // Если свайп достаточно длинный, закрываем модалку
+                if (deltaY > 100) {
+                    closeDrawModal();
+                } else {
+                    // Возвращаем в исходное положение
+                    modalContent.style.transform = 'translateY(0)';
+                }
+            });
+        });
+
+        // Плавная прокрутка к якорям (только для ссылок начинающихся с #)
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    const href = this.getAttribute('href');
+                    // Проверяем что это действительно якорь
+                    if (href && href.startsWith('#')) {
+                        e.preventDefault();
+                        const target = document.querySelector(href);
+                        if (target) {
+                            target.scrollIntoView({
+                                behavior: 'smooth',
+                                block: 'start'
+                            });
+                        }
+                    }
+                });
+            });
+
+        // Анимация появления карточек при прокрутке
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver(function(entries) {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, observerOptions);
+
+        // Наблюдение за карточками розыгрышей
+        document.addEventListener('DOMContentLoaded', function() {
+            const cards = document.querySelectorAll('.draw-card, .winner-card');
+        });
+
+        // Функция для показа промо-модалки
+        function showPromoModal(url) {
+            const modal = document.getElementById('banner-modal');
+            const modalBody = document.getElementById('modal-content-body');
+            
+            modalBody.innerHTML = `
+                <h2 style="color: #ff6b6b; margin-bottom: 1rem;">Специальное предложение!</h2>
+                <p style="line-height: 1.6;">Получите эксклюзивные бонусы и участвуйте в специальных розыгрышах только для VIP-игроков!</p>
+                <button onclick="closeModal()" style="margin-top: 2rem; padding: 1rem 2rem; background: linear-gradient(45deg, #ff6b6b, #feca57); color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: bold;">
+                    Узнать больше
+                </button>
+            `;
+            
+            modal.style.display = 'flex';
+        }
+
+        // Обработка кликов по сервисным кнопкам
+        document.addEventListener('DOMContentLoaded', function() {
+            const serviceButtons = document.querySelectorAll('.service-btn');
+            serviceButtons.forEach(button => {
+                button.addEventListener('click', function(e) {
+                    const href = this.getAttribute('href');
+                    if (href && href.startsWith('#')) {
+                        e.preventDefault();
+                        // Показываем соответствующую модалку или прокручиваем к секции
+                        if (href === '#promotions') {
+                            showPromoModal();
+                        } else if (href === '#draws') {
+                            const drawsSection = document.querySelector('.draws-section');
+                            if (drawsSection) {
+                                drawsSection.scrollIntoView({
+                                    behavior: 'smooth',
+                                    block: 'start'
+                                });
+                            }
+                        }
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

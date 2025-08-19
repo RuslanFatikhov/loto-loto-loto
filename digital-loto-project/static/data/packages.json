@@ -1,0 +1,23 @@
+[
+  {
+    "id": 1,
+    "name": "Пакет — только крупные",
+    "category": "big",
+    "price": 250,
+    "currency": "COINS"
+  },
+  {
+    "id": 2,
+    "name": "Пакет — только экспресс",
+    "category": "express",
+    "price": 60,
+    "currency": "COINS"
+  },
+  {
+    "id": 3,
+    "name": "Пакет — все розыгрыши",
+    "category": "all",
+    "price": 300,
+    "currency": "COINS"
+  }
+]

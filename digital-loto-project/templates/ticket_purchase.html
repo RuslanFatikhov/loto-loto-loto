@@ -1,0 +1,1082 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/reset.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <title>Покупка билета</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+
+
+
+
+
+        .contest-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .contest-icon {
+            width: 40px;
+            height: 40px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .contest-text {
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .contest-status {
+            background: rgba(255,255,255,0.2);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            position: relative;
+            z-index: 1;
+        }
+
+
+       
+
+        @keyframes progressShimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+
+
+       
+
+
+
+
+
+
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+        .prize-chance {
+            background: #007BFF;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .draw-info {
+            text-align: center;
+            color: #6C757D;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        
+
+
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+
+        .tickets-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #8B5CF6 0%, #A855F7 100%);
+            border-radius: 4px;
+            width: 0%;
+            transition: width 0.5s ease;
+            position: relative;
+        }
+
+        .add-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #8B5CF6;
+            color: white;
+            border: none;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(139, 92, 246, 0.4);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .add-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 25px rgba(139, 92, 246, 0.5);
+        }
+
+        .add-button:active {
+            transform: scale(0.95);
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            padding: 32px;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+            transform: scale(0.7) translateY(50px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .modal.show .modal-content {
+            transform: scale(1) translateY(0);
+        }
+
+        .success-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+            color: white;
+            font-size: 40px;
+        }
+
+
+        .modal-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #2C3E50;
+            margin-bottom: 16px;
+        }
+
+        .modal-text {
+            font-size: 16px;
+            color: #6C757D;
+            margin-bottom: 24px;
+            line-height: 1.5;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 12px;
+        }
+
+        .modal-button {
+            flex: 1;
+            padding: 14px 20px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .modal-button.primary {
+            background: #007BFF;
+            color: white;
+        }
+
+        .modal-button.primary:hover {
+            background: #0056B3;
+            transform: translateY(-1px);
+        }
+
+        .modal-button.secondary {
+            background: #F8F9FA;
+            color: #495057;
+            border: 1px solid #E9ECEF;
+        }
+
+        .modal-button.secondary:hover {
+            background: #E9ECEF;
+            transform: translateY(-1px);
+        }
+
+        .loading {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        .loading .purchase-button {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .loading .purchase-button::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+        }
+
+        @keyframes loading {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+
+    </style>
+</head>
+<body class="bg2">
+    <div class="header">
+        <button class="header_bl" onclick="goBack()"><p>Назад</p></button>
+        
+        <h1>Покупка билета</h1>
+    </div>
+    
+    <div class="main-content">
+        <!-- Конкурс квартиры (показывается только для big розыгрышей) -->
+        <div class="apartment-contest" id="apartmentContest" style="display: none;">
+            
+            <div class="progress-container">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <p class="progress-text" id="progressText">0 из 5</p>
+            </div>
+
+
+            <div class="contest-info">
+                <img src="{{ url_for('static', filename='img/draws/big_prize1.png') }}" alt="House Icon" class="contest-icon">
+                <p class="contest-text">Выиграй квартиру</p>
+                <div class="contest-status" id="contestStatus">Участвую</div> <!-- Добавить этот элемент -->
+            </div>
+        </div>
+
+        <!-- Контейнер билетов -->
+        <div class="ticket-container">
+            <div class="ticket" id="currentTicket">
+                <div class="ticket-header">
+                    
+                    <h3 class="ticket-title white1" id="ticketTitle">Билет #1</h3>
+                    
+                    <button class="close-button" onclick="deleteCurrentTicket()">×</button>
+                </div>
+
+                
+                
+
+                <div class="numbers-section">
+                    <div class="section-header">
+                        <h3 class="section-title white1">Выберите числа</h3>
+                        <button class="lucky-button" onclick="generateLuckyNumbers()">Мне повезет</button>
+                    </div>
+
+                    <div class="numbers-grid">
+                        <div class="gradient-1"></div>
+                        <div class="gradient-2"></div>
+                        <div class="number-slider" id="numberSlider">
+                            
+                            <!-- Слайдеры будут созданы динамически -->
+                        </div>
+                    </div>
+                </div>
+
+                
+            </div>
+        </div>
+
+        <div class="ticket-bottom">
+            <button class="nav-button nav-left" id="navLeft" onclick="previousTicket()">‹</button>
+                <p class="ticket-counter" id="ticketCounter">1 из 1</p>
+            <button class="nav-button nav-right" id="navRight" onclick="nextTicket()">›</button>
+        </div>
+
+        <span class="button-wrapper">
+            <button class="add-ticket-button" onclick="addTicket()">Добавить билет</button>
+        </span>
+
+        <!-- Секция призов -->
+        <div class="draws-section">
+            <h2 class="black1">Что можно выиграть</h2>
+            <div id="prizesList">
+                <!-- Призы будут добавлены динамически -->
+            </div>
+        </div>
+
+        <!-- Информация о розыгрыше -->
+        <div class="draw-info" id="drawInfo">
+            Розыгрыш проведем 31 августа 14:00<br>
+            Прямая трансляция будет в группе ВКонтакте Ozon
+        </div>
+
+        
+
+        <!-- Кнопка покупки -->
+        <div class="purchase-section" id="purchaseSection">
+            <!-- Прогресс билетов -->
+            <div class="tickets-progress">
+                <p class="tickets-info" id="ticketsInfo">Еще 9 билетов и 1 билет получите бесплатно</p>
+                <div class="tickets-bar">
+                    <div class="tickets-fill" id="ticketsFill"></div>
+                </div>
+            </div>
+
+            <button class="btn-yellow" onclick="purchaseTickets()">
+                <span id="purchaseText">Купить 1 билет</span>
+                <div class="draw-cost">
+                    <p id="totalPrice">100</p>
+                    <img src="../static/img/icons/coin.png">
+                </div>
+            </button>
+        </div>
+    </div>
+
+
+    <!-- Модальное окно успеха -->
+    <div class="modal" id="successModal">
+        <div class="modal-content">
+            <div class="success-icon">✓</div>
+            <div class="modal-title">Поздравляем!</div>
+            <div class="modal-text" id="modalText">
+                Вы успешно купили 2 билета<br>
+                на сумму 200 🪙
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-button secondary" onclick="goToTickets()">Мои билеты</button>
+                <button class="modal-button primary" onclick="goToMain()">На главную</button>
+            </div>
+        </div>
+    </div>
+
+        <script>
+   // Получаем данные розыгрыша от Flask
+   window.currentDrawData = {{ draw | tojson | safe }};
+   
+   // Глобальные переменные
+   let currentTicketIndex = 0;
+   let tickets = []; // Массив для хранения данных всех билетов
+   let selectedNumbers = [];
+   let apartmentTicketsCount = 0;
+   let isAnimating = false;
+
+   // Инициализация
+   document.addEventListener('DOMContentLoaded', function() {
+       initializeInterface();
+   });
+
+   function initializeInterface() {
+       // Используем данные от Flask вместо mockDrawData
+       if (!window.currentDrawData) {
+           console.error('Данные розыгрыша не переданы');
+           return;
+       }
+       
+       // Создаем первый билет
+       tickets = [{
+           id: 1,
+           numbers: []
+       }];
+       currentTicketIndex = 0;
+       
+       // Настраиваем интерфейс в зависимости от типа розыгрыша
+       if (window.currentDrawData.category === 'big') {
+           document.getElementById('apartmentContest').style.display = 'block';
+           updateApartmentProgress();
+       }
+
+       // Создаем слайдеры для выбора чисел
+       createNumberSliders();
+       
+       // Генерируем случайные числа при загрузке
+       generateLuckyNumbers();
+       
+       // Показываем призы
+       displayPrizes();
+       
+       // Обновляем интерфейс
+       updateInterface();
+   }
+
+   function createNumberSliders() {
+       const container = document.getElementById('numberSlider');
+       container.innerHTML = '';
+       
+       const numbersCount = window.currentDrawData.numbers_count;
+       selectedNumbers = new Array(numbersCount).fill(0);
+       
+       for (let i = 0; i < numbersCount; i++) {
+           const column = document.createElement('div');
+           column.className = 'number-column';
+           
+           const picker = document.createElement('div');
+           picker.className = 'number-picker';
+           picker.dataset.index = i;
+           
+           const numberList = document.createElement('div');
+           numberList.className = 'number-list';
+           
+           // Создаем числа от 0 до 9 с повторениями для эффекта бесконечной прокрутки
+           for (let j = 0; j < 30; j++) {
+               const numberItem = document.createElement('p');
+               numberItem.className = 'number-item';
+               numberItem.textContent = j % 10;
+               numberItem.dataset.value = j % 10;
+               numberList.appendChild(numberItem);
+           }
+           
+           const overlay = document.createElement('div');
+           overlay.className = 'picker-overlay';
+           
+           picker.appendChild(numberList);
+           picker.appendChild(overlay);
+           column.appendChild(picker);
+           container.appendChild(column);
+           
+           // Добавляем обработчики событий для touch/mouse
+           setupSliderEvents(picker, i);
+       }
+   }
+
+   function setupSliderEvents(picker, index) {
+       let startY = 0;
+       let currentY = 0;
+       let isDragging = false;
+       let currentOffset = -200; // Начальная позиция (5-й элемент = число 5)
+       
+       const numberList = picker.querySelector('.number-list');
+       
+       function updatePosition(offset) {
+           numberList.style.transform = `translateY(${offset}px)`;
+           
+           // Определяем активный элемент
+           const activeIndex = Math.round(-offset / 40);
+           const items = numberList.querySelectorAll('.number-item');
+           
+           items.forEach((item, i) => {
+               item.classList.toggle('active', i === activeIndex);
+           });
+           
+           // Обновляем выбранное число
+           if (items[activeIndex]) {
+               selectedNumbers[index] = parseInt(items[activeIndex].dataset.value);
+               // Автоматически сохраняем в текущий билет
+               if (tickets[currentTicketIndex]) {
+                   tickets[currentTicketIndex].numbers[index] = selectedNumbers[index];
+               }
+           }
+       }
+       
+       // Touch events
+       picker.addEventListener('touchstart', function(e) {
+           startY = e.touches[0].clientY;
+           isDragging = true;
+           numberList.style.transition = 'none';
+       });
+       
+       picker.addEventListener('touchmove', function(e) {
+           if (!isDragging) return;
+           e.preventDefault();
+           
+           const deltaY = e.touches[0].clientY - startY;
+           currentY = currentOffset + deltaY;
+           
+           // Ограничиваем прокрутку
+           const maxOffset = 0;
+           const minOffset = -(29 * 40);
+           currentY = Math.max(minOffset, Math.min(maxOffset, currentY));
+           
+           updatePosition(currentY);
+       });
+       
+       picker.addEventListener('touchend', function(e) {
+           if (!isDragging) return;
+           isDragging = false;
+           
+           // Привязываем к ближайшему элементу
+           const snapOffset = Math.round(currentY / 40) * 40;
+           currentOffset = snapOffset;
+           
+           numberList.style.transition = 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+           updatePosition(currentOffset);
+       });
+       
+       // Mouse events (для десктопа)
+       picker.addEventListener('mousedown', function(e) {
+           startY = e.clientY;
+           isDragging = true;
+           numberList.style.transition = 'none';
+           e.preventDefault();
+       });
+       
+       document.addEventListener('mousemove', function(e) {
+           if (!isDragging) return;
+           
+           const deltaY = e.clientY - startY;
+           currentY = currentOffset + deltaY;
+           
+           // Ограничиваем прокрутку
+           const maxOffset = 0;
+           const minOffset = -(29 * 40);
+           currentY = Math.max(minOffset, Math.min(maxOffset, currentY));
+           
+           updatePosition(currentY);
+       });
+       
+       document.addEventListener('mouseup', function(e) {
+           if (!isDragging) return;
+           isDragging = false;
+           
+           // Привязываем к ближайшему элементу
+           const snapOffset = Math.round(currentY / 40) * 40;
+           currentOffset = snapOffset;
+           
+           numberList.style.transition = 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+           updatePosition(currentOffset);
+       });
+       
+       // Wheel events для прокрутки колесиком мыши
+       picker.addEventListener('wheel', function(e) {
+           e.preventDefault();
+           
+           const delta = e.deltaY > 0 ? -40 : 40;
+           const newOffset = currentOffset + delta;
+           
+           const maxOffset = 0;
+           const minOffset = -(29 * 40);
+           currentOffset = Math.max(minOffset, Math.min(maxOffset, newOffset));
+           
+           numberList.style.transition = 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+           updatePosition(currentOffset);
+       });
+       
+       // Клик по элементу для быстрого выбора
+       picker.addEventListener('click', function(e) {
+           if (isDragging) return;
+           
+           const item = e.target.closest('.number-item');
+           if (item) {
+               const items = Array.from(numberList.querySelectorAll('.number-item'));
+               const clickedIndex = items.indexOf(item);
+               currentOffset = -clickedIndex * 40;
+               
+               numberList.style.transition = 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+               updatePosition(currentOffset);
+           }
+       });
+       
+       // Устанавливаем начальную позицию
+       updatePosition(currentOffset);
+   }
+
+   function generateLuckyNumbers() {
+       const pickers = document.querySelectorAll('.number-picker');
+       const newNumbers = [];
+       
+       pickers.forEach((picker, index) => {
+           const randomNum = Math.floor(Math.random() * 10);
+           const randomOffset = -(randomNum * 40 + 200); // +200 для корректировки начальной позиции
+           
+           const numberList = picker.querySelector('.number-list');
+           numberList.style.transition = 'transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)';
+           numberList.style.transform = `translateY(${randomOffset}px)`;
+           
+           // Обновляем активные элементы
+           setTimeout(() => {
+               const activeIndex = Math.round(-randomOffset / 40);
+               const items = numberList.querySelectorAll('.number-item');
+               
+               items.forEach((item, i) => {
+                   item.classList.toggle('active', i === activeIndex);
+               });
+               
+               selectedNumbers[index] = randomNum;
+               newNumbers[index] = randomNum;
+           }, 100);
+       });
+       
+       // Сохраняем числа для текущего билета
+       setTimeout(() => {
+           tickets[currentTicketIndex].numbers = [...newNumbers];
+       }, 200);
+   }
+
+   function displayPrizes() {
+       const prizesList = document.getElementById('prizesList');
+       prizesList.innerHTML = '';
+       
+       if (window.currentDrawData.prizes && window.currentDrawData.prizes.length > 0) {
+           window.currentDrawData.prizes.forEach(prize => {
+               const prizeItem = document.createElement('div');
+               prizeItem.className = 'prize-item';
+               
+               prizeItem.innerHTML = `
+                   <h3 class="prize-name">${prize.name}</h3>
+                   <p class="prize-chance">${getChanceText(prize)}</p>
+               `;
+               
+               prizesList.appendChild(prizeItem);
+           });
+       }
+   }
+
+   function getChanceText(prize) {
+       const ticketsCount = tickets.length;
+       if (window.currentDrawData.category === 'big' && apartmentTicketsCount >= prize.min_tickets) {
+           return `${Math.floor(apartmentTicketsCount / prize.chance_per)} шанс`;
+       }
+       return `${Math.floor(ticketsCount / prize.chance_per)} шанс`;
+   }
+
+   function addTicket() {
+       if (isAnimating || tickets.length >= 10) return;
+       
+       // Сохраняем текущие числа
+       saveCurrentTicketNumbers();
+       
+       isAnimating = true;
+       
+       // Создаем новый билет
+       const newTicket = {
+           id: tickets.length + 1,
+           numbers: []
+       };
+       tickets.push(newTicket);
+       currentTicketIndex = tickets.length - 1;
+       
+       // Анимация уходящего билета
+       const currentTicket = document.getElementById('currentTicket');
+       currentTicket.classList.add('slide-out');
+       
+       // Создаем новый билет
+       setTimeout(() => {
+           currentTicket.classList.remove('slide-out');
+           currentTicket.classList.add('slide-in');
+           
+           // Генерируем новые случайные числа
+           generateLuckyNumbers();
+           
+           setTimeout(() => {
+               currentTicket.classList.remove('slide-in');
+               isAnimating = false;
+           }, 100);
+           
+           // Обновляем интерфейс
+           updateInterface();
+       }, 250);
+   }
+
+   function previousTicket() {
+       if (isAnimating || currentTicketIndex <= 0) return;
+       
+       saveCurrentTicketNumbers();
+       isAnimating = true;
+       currentTicketIndex--;
+       
+       const currentTicket = document.getElementById('currentTicket');
+       currentTicket.classList.add('slide-out');
+       
+       setTimeout(() => {
+           currentTicket.classList.remove('slide-out');
+           currentTicket.classList.add('slide-in');
+           
+           // Загружаем числа предыдущего билета
+           loadTicketNumbers(currentTicketIndex);
+           
+           setTimeout(() => {
+               currentTicket.classList.remove('slide-in');
+               isAnimating = false;
+           }, 100);
+           
+           updateInterface();
+       }, 250);
+   }
+
+   function nextTicket() {
+       if (isAnimating || currentTicketIndex >= tickets.length - 1) return;
+       
+       saveCurrentTicketNumbers();
+       isAnimating = true;
+       currentTicketIndex++;
+       
+       const currentTicket = document.getElementById('currentTicket');
+       currentTicket.classList.add('slide-out');
+       
+       setTimeout(() => {
+           currentTicket.classList.remove('slide-out');
+           currentTicket.classList.add('slide-in');
+           
+           // Загружаем числа следующего билета
+           loadTicketNumbers(currentTicketIndex);
+           
+           setTimeout(() => {
+               currentTicket.classList.remove('slide-in');
+               isAnimating = false;
+           }, 100);
+           
+           updateInterface();
+       }, 250);
+   }
+
+   function deleteCurrentTicket() {
+       if (isAnimating || tickets.length <= 1) {
+           // Не позволяем удалить последний билет
+           shakeElement(document.getElementById('currentTicket'));
+           return;
+       }
+       
+       isAnimating = true;
+       
+       // Удаляем билет из массива
+       tickets.splice(currentTicketIndex, 1);
+       
+       // Корректируем индекс
+       if (currentTicketIndex >= tickets.length) {
+           currentTicketIndex = tickets.length - 1;
+       }
+       
+       // Переназначаем ID билетов
+       tickets.forEach((ticket, index) => {
+           ticket.id = index + 1;
+       });
+       
+       // Анимация удаления
+       const currentTicket = document.getElementById('currentTicket');
+       currentTicket.style.transform = 'scale(0.8) rotateZ(10deg)';
+       currentTicket.style.opacity = '0';
+       
+       setTimeout(() => {
+           currentTicket.style.transform = '';
+           currentTicket.style.opacity = '';
+           
+           // Загружаем числа текущего билета
+           loadTicketNumbers(currentTicketIndex);
+           
+           isAnimating = false;
+           updateInterface();
+       }, 300);
+   }
+
+   function saveCurrentTicketNumbers() {
+       // Сохраняем текущие выбранные числа в билете
+       if (tickets[currentTicketIndex]) {
+           tickets[currentTicketIndex].numbers = [...selectedNumbers];
+       }
+   }
+
+   function loadTicketNumbers(ticketIndex) {
+       const ticket = tickets[ticketIndex];
+       if (!ticket || !ticket.numbers.length) {
+           generateLuckyNumbers();
+           return;
+       }
+       
+       // Устанавливаем числа в слайдеры
+       const pickers = document.querySelectorAll('.number-picker');
+       
+       pickers.forEach((picker, index) => {
+           const targetNumber = ticket.numbers[index] || 0;
+           const targetOffset = -(targetNumber * 40 + 200);
+           
+           const numberList = picker.querySelector('.number-list');
+           numberList.style.transition = 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+           numberList.style.transform = `translateY(${targetOffset}px)`;
+           
+           // Обновляем активные элементы
+           setTimeout(() => {
+               const activeIndex = Math.round(-targetOffset / 40);
+               const items = numberList.querySelectorAll('.number-item');
+               
+               items.forEach((item, i) => {
+                   item.classList.toggle('active', i === activeIndex);
+               });
+               
+               selectedNumbers[index] = targetNumber;
+           }, 50);
+       });
+   }
+
+   function updateInterface() {
+       const ticketsCount = tickets.length;
+       
+       // Обновляем заголовок билета
+       document.getElementById('ticketTitle').textContent = `Билет #${tickets[currentTicketIndex].id}`;
+       
+       // Обновляем счетчик билетов
+       document.getElementById('ticketCounter').textContent = `${currentTicketIndex + 1} из ${ticketsCount}`;
+       
+       // Обновляем состояние навигационных кнопок
+       const navLeft = document.getElementById('navLeft');
+       const navRight = document.getElementById('navRight');
+       
+       navLeft.disabled = currentTicketIndex <= 0;
+       navRight.disabled = currentTicketIndex >= ticketsCount - 1;
+       
+       // Обновляем текст кнопки покупки
+       const purchaseText = document.getElementById('purchaseText');
+       const totalPrice = document.getElementById('totalPrice');
+       const ticketPrice = window.currentDrawData.cost;
+       
+       if (ticketsCount === 1) {
+           purchaseText.textContent = 'Купить 1 билет';
+       } else {
+           purchaseText.textContent = `Купить ${ticketsCount} билетов`;
+       }
+       
+       totalPrice.textContent = ticketPrice * ticketsCount;
+       
+       // Обновляем прогресс бесплатного билета
+       updateTicketsProgress();
+       
+       // Обновляем прогресс квартиры для big розыгрышей
+       if (window.currentDrawData.category === 'big') {
+           updateApartmentProgress();
+       }
+       
+       // Обновляем призы
+       displayPrizes();
+       
+       // Показываем/скрываем кнопку добавления билета
+       const addButton = document.getElementById('addButton');
+       if (ticketsCount >= 10) {
+           addButton.style.display = 'none';
+       } else {
+           addButton.style.display = 'flex';
+       }
+   }
+
+   function updateTicketsProgress() {
+       const ticketsInfo = document.getElementById('ticketsInfo');
+       const ticketsFill = document.getElementById('ticketsFill');
+       const cycle = window.currentDrawData.bonus_tickets_cycle;
+       const ticketsCount = tickets.length;
+       
+       const remaining = cycle - (ticketsCount % cycle);
+       const progress = (ticketsCount % cycle) / cycle * 100;
+       
+       if (remaining === cycle) {
+           ticketsInfo.textContent = `Еще ${remaining} билетов и 1 билет получите бесплатно`;
+       } else if (remaining === 1) {
+           ticketsInfo.textContent = `Еще ${remaining} билет и 1 билет получите бесплатно`;
+       } else {
+           ticketsInfo.textContent = `Еще ${remaining} билета и 1 билет получите бесплатно`;
+       }
+       
+       ticketsFill.style.width = `${progress}%`;
+   }
+
+   function updateApartmentProgress() {
+       const progressFill = document.getElementById('progressFill');
+       const progressText = document.getElementById('progressText');
+       const contestStatus = document.getElementById('contestStatus');
+       const apartmentContest = document.getElementById('apartmentContest');
+       const ticketsCount = tickets.length;
+       
+       // Для демонстрации используем текущее количество билетов как прогресс квартиры
+       apartmentTicketsCount = Math.min(ticketsCount, 5);
+       const progress = (apartmentTicketsCount / 5) * 100;
+       
+       progressFill.style.width = `${progress}%`;
+       progressText.textContent = `${apartmentTicketsCount} из 5`;
+       
+       if (apartmentTicketsCount >= 5) {
+           contestStatus.textContent = 'Участвую';
+           apartmentContest.classList.add('active');
+       } else {
+           contestStatus.textContent = 'Участвую';
+           apartmentContest.classList.remove('active');
+       }
+   }
+
+   function purchaseTickets() {
+       const purchaseSection = document.getElementById('purchaseSection');
+       purchaseSection.classList.add('loading');
+       
+       // Симуляция запроса к серверу
+       setTimeout(() => {
+           purchaseSection.classList.remove('loading');
+           showSuccessModal();
+       }, 1500);
+   }
+
+   function showSuccessModal() {
+       const modal = document.getElementById('successModal');
+       const modalText = document.getElementById('modalText');
+       const ticketsCount = tickets.length;
+       const totalCost = window.currentDrawData.cost * ticketsCount;
+       
+       let ticketsWord;
+       if (ticketsCount === 1) {
+           ticketsWord = 'билет';
+       } else if (ticketsCount < 5) {
+           ticketsWord = 'билета';
+       } else {
+           ticketsWord = 'билетов';
+       }
+       
+       modalText.innerHTML = `
+           Вы успешно купили ${ticketsCount} ${ticketsWord}<br>
+           на сумму ${totalCost} 🪙
+       `;
+       
+       modal.classList.add('show');
+   }
+
+   function closeModal() {
+       const modal = document.getElementById('successModal');
+       modal.classList.remove('show');
+   }
+
+   function goBack() {
+       // Возврат на главную страницу
+       window.location.href = '/';
+   }
+
+   function closeTicketPurchase() {
+       // Закрытие интерфейса покупки
+       if (confirm('Вы уверены, что хотите закрыть интерфейс покупки билета? Несохраненные изменения будут потеряны.')) {
+           window.location.href = '/';
+       }
+   }
+
+   function goToTickets() {
+       closeModal();
+       // Переход на страницу "Мои билеты"
+       window.location.href = '/tickets';
+   }
+
+   function goToMain() {
+       closeModal();
+       // Переход на главную страницу
+       window.location.href = '/';
+   }
+
+   // Закрытие модального окна при клике вне его
+   document.getElementById('successModal').addEventListener('click', function(e) {
+       if (e.target === this) {
+           closeModal();
+       }
+   });
+
+   // Обработка клавиатуры для навигации
+   document.addEventListener('keydown', function(e) {
+       if (isAnimating) return;
+       
+       switch(e.key) {
+           case 'ArrowLeft':
+               e.preventDefault();
+               previousTicket();
+               break;
+           case 'ArrowRight':
+               e.preventDefault();
+               nextTicket();
+               break;
+           case 'Delete':
+           case 'Backspace':
+               if (e.ctrlKey || e.metaKey) {
+                   e.preventDefault();
+                   deleteCurrentTicket();
+               }
+               break;
+           case 'Enter':
+               if (e.ctrlKey || e.metaKey) {
+                   e.preventDefault();
+                   addTicket();
+               }
+               break;
+           case ' ':
+               e.preventDefault();
+               generateLuckyNumbers();
+               break;
+       }
+   });
+
+   // Предотвращаем скролл страницы при работе со слайдерами на мобильных
+   document.addEventListener('touchmove', function(e) {
+       const picker = e.target.closest('.number-picker');
+       if (picker) {
+           e.preventDefault();
+       }
+   }, { passive: false });
+
+   // Добавляем эффект тряски для недоступных действий
+   function shakeElement(element) {
+       element.style.animation = 'shake 0.5s ease-in-out';
+       setTimeout(() => {
+           element.style.animation = '';
+       }, 500);
+   }
+
+   // CSS анимация тряски
+   const shakeKeyframes = `
+       @keyframes shake {
+           0%, 100% { transform: translateX(0); }
+           25% { transform: translateX(-5px); }
+           75% { transform: translateX(5px); }
+       }
+   `;
+   
+   const style = document.createElement('style');
+   style.textContent = shakeKeyframes;
+   document.head.appendChild(style);
+</script>
+</body>
+</html>

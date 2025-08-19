@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Пакеты билетов</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/reset.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body style="box-sizing: border-box;">
+    <div class="header">
+        <button class="header_bl" onclick="goBack()"><p>Назад</p></button>
+        
+        <h1>Покупка пакетов</h1>
+    </div>
+
+    <div class="main-content">
+        <div class="head">
+        <h1 class="black1">Баланс: {{ balance }} <img src="{{ url_for('static', filename='img/icons/coin.png') }}"></h1>
+    </div>
+    
+
+
+        <span class="vstack">
+            <span class="draws-section vstack gap16">
+                <img src="{{ url_for('static', filename='img/packages.jpeg') }}" alt="Пакет M" class="package-card">
+                <span class="hstack sb"><h2>Пакет S</h2><div class="draw-cost">
+                    <p id="totalPrice">100</p>
+                    <img src="../static/img/icons/coin.png">
+                </div></span>
+                <p>Пакет билетов для всех экспресс розыгрышей</p>
+                
+                <button class="btn-yellow" onclick="buyPackage('S', 100)">Купить</button>
+            </span>
+            <span class="draws-section vstack gap16">
+                <img src="{{ url_for('static', filename='img/packagem.jpeg') }}" alt="Пакет M" class="package-card">
+                <span class="hstack sb"><h2>Пакет M</h2><div class="draw-cost">
+                    <p id="totalPrice">150</p>
+                    <img src="../static/img/icons/coin.png">
+                </div></span>
+                <p>Пакет билетов для всех крупных розыгрышей</p>
+
+                <button class="btn-yellow" onclick="buyPackage('M', 150)">Купить</button>
+            </span>
+            <span class="draws-section vstack gap16">
+                <img src="{{ url_for('static', filename='img/packagel.jpeg') }}" alt="Пакет L" class="package-card">
+                <span class="hstack sb"><h2>Пакет L</h2><div class="draw-cost">
+                    <p id="totalPrice">200</p>
+                    <img src="../static/img/icons/coin.png">
+                </div></span>
+                <p>Пакет билетов для всех розыгрышей</p>
+
+                <button class="btn-yellow" onclick="buyPackage('L', 200)">Купить</button>
+            </span>
+            <span class="draws-section vstack gap16">
+                <img src="{{ url_for('static', filename='img/packagexl.jpeg') }}" alt="Пакет M" class="package-card">
+                <span class="hstack sb"><h2>Пакет XL</h2><div class="draw-cost">
+                    <p id="totalPrice">300</p>
+                    <img src="../static/img/icons/coin.png">
+                </div></span>
+                <p>Пакет билетов для всех розыгрышей и квартиру в Москве</p>
+
+                <button class="btn-yellow" onclick="buyPackage('XL', 100)">Купить</button>
+            </span>
+        </span>
+
+
+
+        
+    </table>
+    </div>
+    
+
+    <script>
+        function buyPackage(packageType, price) {
+            if (confirm(`Купить пакет ${packageType} за ${price} монет?`)) {
+                // Здесь будет AJAX запрос на покупку
+                alert(`Покупка пакета ${packageType}`);
+                // fetch('/api/buy-package', {...})
+            }
+        }
+    </script>
+</body>
+</html>

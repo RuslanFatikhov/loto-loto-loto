@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/reset.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <title>Мои билеты - Лото</title>
+
+</head>
+<body class="bg2">
+    <div class="header">
+
+        <a href="/" class="header_bl">
+            <img src="{{ url_for('static', filename='img/icons/chevron_left.svg') }}" alt="chevron" >
+            <p>Назад</p>
+        </a>
+
+        <h1>Мои билеты</h1>
+
+        
+    </div>
+
+    <div class="container">
+        <!-- Фильтры -->
+
+            <!-- Фильтр по статусам -->
+
+            <div class="filter-status">
+                <button class="filter-btn active" data-status="all">Все</button>
+                <button class="filter-btn" data-status="winning">Выигрышные</button>
+                <button class="filter-btn" data-status="confirmed">Ждут розыгрыша</button>
+                <button class="filter-btn" data-status="pending">Ждут выбора чисел</button>
+                <button class="filter-btn" data-status="completed">Прошедшие</button>
+            </div>
+
+            <!-- Фильтр по розыгрышам -->
+            <div class="filter-draws">
+                    <button class="draw-filter-btn active" data-draw="all">
+                        <span class="all-icon">Все</span>
+                    </button>
+                    <!-- Розыгрыши будут добавлены динамически -->
+            </div>
+        </div>
+
+        <!-- Счетчик результатов -->
+        <div class="results-counter">
+            <h2><span id="visible-tickets-count">0</span> билетов</h2>
+        </div>
+
+        <!-- Контейнер билетов -->
+        <div class="tickets-container" id="tickets-container">
+            <!-- Билеты будут загружены из JSON -->
+        </div>
+
+        <!-- Пустое состояние -->
+        <div class="empty-state" id="empty-state">
+            <div class="empty-state-icon">🎫</div>
+            <h3>Билеты не найдены</h3>
+            <p>Попробуйте изменить фильтры или купите первый билет</p>
+            <a href="/" class="btn-primary">Купить билет</a>
+        </div>
+
+        <!-- Состояние загрузки -->
+        <div class="loading-state" id="loading-state">
+            <div class="loading-spinner"></div>
+            <p>Загрузка билетов...</p>
+        </div>
+    </div>
+
+    <script>
+        class TicketFilter {
+            constructor() {
+                this.currentStatusFilter = 'all';
+                this.currentDrawFilter = 'all';
+                this.draws = [];
+                this.tickets = [];
+                this.processedTickets = [];
+                this.init();
+            }
+
+            async init() {
+                this.showLoading(true);
+                try {
+                    await this.loadData();
+                    this.processTicketsData();
+                    this.renderDrawFilters();
+                    this.renderTickets();
+                    this.bindEvents();
+                    this.updateCounter();
+                    this.showLoading(false);
+                } catch (error) {
+                    console.error('Ошибка загрузки данных:', error);
+                    this.showError();
+                }
+            }
+
+            async loadData() {
+                try {
+                    // Загружаем данные о розыгрышах и билетах
+                    const [drawsResponse, ticketsResponse] = await Promise.all([
+                        fetch('/static/data/draws.json'),
+                        fetch('/static/data/tickets.json')
+                    ]);
+
+                    if (!drawsResponse.ok || !ticketsResponse.ok) {
+                        throw new Error('Ошибка загрузки данных');
+                    }
+
+                    this.draws = await drawsResponse.json();
+                    this.tickets = await ticketsResponse.json();
+                } catch (error) {
+                    console.error('Ошибка при загрузке JSON файлов:', error);
+                    throw error;
+                }
+            }
+
+            processTicketsData() {
+                // Группируем билеты по розыгрышам
+                const ticketsByDraw = {};
+                
+                this.tickets.forEach(ticket => {
+                    const draw = this.draws.find(d => d.id === ticket.draw_id);
+                    if (!draw) return;
+
+                    if (!ticketsByDraw[ticket.draw_id]) {
+                        ticketsByDraw[ticket.draw_id] = {
+                            drawId: draw.id,
+                            drawTitle: draw.title,
+                            drawImage: `{{ url_for('static', filename='img/draws/') }}${draw.image}`,
+                            drawStatus: this.getDrawStatus(draw),
+                            tickets: []
+                        };
+                    }
+
+                    // Обрабатываем билет
+                    const processedTicket = {
+                        id: ticket.ticket_id,
+                        numbers: ticket.numbers,
+                        status: this.determineTicketStatus(ticket, draw),
+                        statusText: this.getStatusText(ticket, draw),
+                        purchaseTime: this.formatDateTime(ticket.purchase_time),
+                        isPending: ticket.status === 'pending' || ticket.numbers.length === 0
+                    };
+
+                    ticketsByDraw[ticket.draw_id].tickets.push(processedTicket);
+                });
+
+                // Конвертируем объект в массив
+                this.processedTickets = Object.values(ticketsByDraw);
+            }
+
+            determineTicketStatus(ticket, draw) {
+                // Логика определения статуса билета
+                if (ticket.status === 'pending' || ticket.numbers.length === 0) {
+                    return 'pending';
+                }
+                
+                if (draw.completed) {
+                    // Здесь можно добавить логику проверки выигрыша
+                    // Пока что просто считаем завершенными
+                    return 'completed';
+                }
+                
+                return 'confirmed';
+            }
+
+            getStatusText(ticket, draw) {
+                const status = this.determineTicketStatus(ticket, draw);
+                
+                const statusTexts = {
+                    'pending': 'Ждет выбора чисел',
+                    'confirmed': 'Ждет розыгрыша',
+                    'winning': 'Выигрышный!',
+                    'completed': 'Розыгрыш завершен'
+                };
+
+                return statusTexts[status] || 'Неизвестный статус';
+            }
+
+            getDrawStatus(draw) {
+                if (draw.completed) {
+                    return 'Розыгрыш завершен';
+                }
+                
+                if (draw.time_left) {
+                    return `Активный, осталось: ${draw.time_left}`;
+                }
+                
+                return 'Активный';
+            }
+
+            formatDateTime(dateString) {
+                const date = new Date(dateString);
+                const day = date.getDate().toString().padStart(2, '0');
+                const month = (date.getMonth() + 1).toString().padStart(2, '0');
+                const year = date.getFullYear();
+                const hours = date.getHours().toString().padStart(2, '0');
+                const minutes = date.getMinutes().toString().padStart(2, '0');
+                
+                return `${day}.${month}.${year} ${hours}:${minutes}`;
+            }
+
+            showLoading(show) {
+                const loadingState = document.getElementById('loading-state');
+                const container = document.getElementById('tickets-container');
+                const emptyState = document.getElementById('empty-state');
+                
+                if (show) {
+                    loadingState.style.display = 'flex';
+                    container.style.display = 'none';
+                    emptyState.classList.remove('show');
+                } else {
+                    loadingState.style.display = 'none';
+                    container.style.display = 'flex';
+                }
+            }
+
+            showError() {
+                this.showLoading(false);
+                const container = document.getElementById('tickets-container');
+                container.innerHTML = `
+                    <div class="error-state">
+                        <div class="error-icon">⚠️</div>
+                        <h3>Ошибка загрузки</h3>
+                        <p>Не удалось загрузить данные о билетах. Попробуйте обновить страницу.</p>
+                        <button onclick="location.reload()" class="btn-primary">Обновить</button>
+                    </div>
+                `;
+            }
+
+            renderDrawFilters() {
+                const drawFilters = document.querySelector('.filter-draws');
+                const allButton = drawFilters.querySelector('[data-draw="all"]');
+                
+                // Очищаем все кнопки кроме "Все"
+                const existingButtons = drawFilters.querySelectorAll('.draw-filter-btn:not([data-draw="all"])');
+                existingButtons.forEach(btn => btn.remove());
+
+                // Добавляем кнопки для каждого розыгрыша
+                this.processedTickets.forEach(group => {
+                    const button = document.createElement('button');
+                    button.className = 'draw-filter-btn';
+                    button.setAttribute('data-draw', group.drawId);
+                    button.title = group.drawTitle;
+                    button.innerHTML = `<img src="${group.drawImage}" alt="${group.drawTitle}">`;
+                    drawFilters.appendChild(button);
+                });
+            }
+
+            renderTickets() {
+                const container = document.getElementById('tickets-container');
+                container.innerHTML = '';
+
+                this.processedTickets.forEach(group => {
+                    const groupEl = this.createTicketGroup(group);
+                    container.appendChild(groupEl);
+                });
+            }
+
+            createTicketGroup(group) {
+                const groupEl = document.createElement('div');
+                groupEl.className = 'ticket-group';
+                groupEl.setAttribute('data-draw-id', group.drawId);
+
+                const ticketsHtml = group.tickets.map(ticket => {
+                    const numbersHtml = ticket.isPending 
+                        ? '<span class="pending-text">Числа не выбраны</span>'
+                        : ticket.numbers.map(num => `<span class="number">${num}</span>`).join('');
+
+                    return `
+                        <div class="ticket-item" data-status="${ticket.status}" onclick="goToDrawWithTicket(${group.drawId}, ${ticket.id})">
+                            <div class="ticket-numbers">
+                                ${numbersHtml}
+                            </div>
+                            <div class="ticket-info-bottom">
+                                <p class="ticket-id">Билет #${ticket.id}</p>
+                                <p class="purchase-time">${ticket.purchaseTime}</p>
+                                <p class="ticket-status status-${ticket.status}">${ticket.statusText}</p>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                groupEl.innerHTML = `
+                    <div class="ticket-group-header">
+                        <img src="${group.drawImage}" alt="${group.drawTitle}" class="draw-icon">
+                        <div class="ticket-draw-info">
+                            <h3>${group.drawTitle}</h3>
+                            <p class="draw-status">${group.drawStatus}</p>
+                        </div>
+                        <div class="tickets-count"><p>${group.tickets.length} билетов</p></div>
+                    </div>
+                    <div class="tickets-list">
+                        ${ticketsHtml}
+                    </div>
+                `;
+
+                return groupEl;
+            }
+
+            bindEvents() {
+                // Обработчики для фильтров статуса
+                document.querySelectorAll('.filter-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                        e.target.classList.add('active');
+                        this.currentStatusFilter = e.target.getAttribute('data-status');
+                        this.applyFilters();
+                    });
+                });
+
+                // Обработчики для фильтров розыгрышей
+                document.querySelectorAll('.draw-filter-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        document.querySelectorAll('.draw-filter-btn').forEach(b => b.classList.remove('active'));
+                        e.target.closest('.draw-filter-btn').classList.add('active');
+                        this.currentDrawFilter = e.target.closest('.draw-filter-btn').getAttribute('data-draw');
+                        this.applyFilters();
+                    });
+                });
+            }
+
+            applyFilters() {
+                let visibleTicketsCount = 0;
+                
+                document.querySelectorAll('.ticket-group').forEach(group => {
+                    const groupDrawId = group.getAttribute('data-draw-id');
+                    let groupVisible = false;
+                    
+                    // Фильтр по розыгрышу
+                    if (this.currentDrawFilter !== 'all' && groupDrawId !== this.currentDrawFilter) {
+                        group.classList.add('hidden');
+                        return;
+                    }
+
+                    // Фильтр по статусу билетов
+                    const tickets = group.querySelectorAll('.ticket-item');
+                    tickets.forEach(ticket => {
+                        const ticketStatus = ticket.getAttribute('data-status');
+                        const statusMatch = this.currentStatusFilter === 'all' || ticketStatus === this.currentStatusFilter;
+                        
+                        if (statusMatch) {
+                            ticket.classList.remove('hidden');
+                            groupVisible = true;
+                            visibleTicketsCount++;
+                        } else {
+                            ticket.classList.add('hidden');
+                        }
+                    });
+
+                    // Показываем/скрываем группу
+                    if (groupVisible) {
+                        group.classList.remove('hidden');
+                        // Обновляем счетчик билетов в группе
+                        const visibleInGroup = group.querySelectorAll('.ticket-item:not(.hidden)').length;
+                        const counter = group.querySelector('.tickets-count p');
+                        counter.textContent = `${visibleInGroup} билетов`;
+                    } else {
+                        group.classList.add('hidden');
+                    }
+                });
+
+                this.updateCounter(visibleTicketsCount);
+                this.toggleEmptyState(visibleTicketsCount === 0);
+            }
+
+            updateCounter(count) {
+                if (count === undefined) {
+                    count = document.querySelectorAll('.ticket-item:not(.hidden)').length;
+                }
+                document.getElementById('visible-tickets-count').textContent = count;
+            }
+
+            toggleEmptyState(show) {
+                const emptyState = document.getElementById('empty-state');
+                const ticketsContainer = document.getElementById('tickets-container');
+                
+                if (show) {
+                    emptyState.classList.add('show');
+                    ticketsContainer.style.display = 'none';
+                } else {
+                    emptyState.classList.remove('show');
+                    ticketsContainer.style.display = 'flex';
+                }
+            }
+        }
+
+        function goToDrawWithTicket(drawId, ticketId) {
+            // Переход на страницу розыгрыша с открытой вкладкой "Мои билеты"
+            console.log(`Переход к розыгрышу ${drawId}, билет ${ticketId}`);
+            // window.location.href = `/draw/${drawId}?tab=tickets&ticket=${ticketId}`;
+            alert(`Переход к розыгрышу ${drawId}, билет ${ticketId}`);
+        }
+
+        // Инициализация после загрузки DOM
+        document.addEventListener('DOMContentLoaded', () => {
+            new TicketFilter();
+        });
+
+        // Сохранение состояния фильтров
+        window.addEventListener('beforeunload', () => {
+            const activeStatusBtn = document.querySelector('.filter-btn.active');
+            const activeDrawBtn = document.querySelector('.draw-filter-btn.active');
+            
+            if (activeStatusBtn && activeDrawBtn) {
+                localStorage.setItem('ticketFilters', JSON.stringify({
+                    status: activeStatusBtn.getAttribute('data-status'),
+                    draw: activeDrawBtn.getAttribute('data-draw')
+                }));
+            }
+        });
+
+        // Восстановление состояния фильтров
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const savedFilters = localStorage.getItem('ticketFilters');
+                if (savedFilters) {
+                    const filters = JSON.parse(savedFilters);
+                    
+                    // Восстанавливаем фильтр статуса
+                    document.querySelectorAll('.filter-btn').forEach(btn => {
+                        btn.classList.toggle('active', btn.getAttribute('data-status') === filters.status);
+                    });
+                    
+                    // Восстанавливаем фильтр розыгрыша
+                    document.querySelectorAll('.draw-filter-btn').forEach(btn => {
+                        btn.classList.toggle('active', btn.getAttribute('data-draw') === filters.draw);
+                    });
+                    
+                    // Применяем фильтры
+                    const ticketFilter = window.ticketFilterInstance;
+                    if (ticketFilter) {
+                        ticketFilter.currentStatusFilter = filters.status;
+                        ticketFilter.currentDrawFilter = filters.draw;
+                        ticketFilter.applyFilters();
+                    }
+                }
+            }, 100);
+        });
+    </script>
+
+    <style>
+        .loading-state {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 20px;
+            text-align: center;
+        }
+
+        .error-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+
+        .error-state h3 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .error-state p {
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .pending-text {
+            color: #999;
+            font-style: italic;
+            padding: 10px;
+        }
+
+        .number {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            line-height: 30px;
+            text-align: center;
+            margin: 2px;
+            font-weight: bold;
+        }
+
+        .status-pending { color: #ff9800; }
+        .status-confirmed { color: #2196f3; }
+        .status-winning { color: #4caf50; font-weight: bold; }
+        .status-completed { color: #9e9e9e; }
+    </style>
+</body>
+</html>

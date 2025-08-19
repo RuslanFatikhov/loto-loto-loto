@@ -1,0 +1,28 @@
+{
+  "packages": [
+    {
+      "id": 1,
+      "name": "VIP пакет",
+      "category": "big",
+      "price": 200,
+      "currency": "COINS",
+      "created_date": "2025-08-18T16:04:01.867634"
+    },
+    {
+      "id": 2,
+      "name": "Экспресс набор",
+      "category": "express",
+      "price": 100,
+      "currency": "COINS",
+      "created_date": "2025-08-18T16:04:01.867651"
+    },
+    {
+      "id": 3,
+      "name": "Универсальный пакет",
+      "category": "all",
+      "price": 250,
+      "currency": "COINS",
+      "created_date": "2025-08-18T16:04:01.867681"
+    }
+  ]
+}
