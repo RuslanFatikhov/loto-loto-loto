@@ -2,6 +2,11 @@
 WSGI entry point for production deployment
 """
 import os
+import sys
+
+# Добавляем путь к приложению
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'digital-loto-project'))
+
 from app import create_app
 
 # Создаем приложение для продакшн
